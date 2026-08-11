@@ -6,6 +6,24 @@ DB_NAME = "centro_medico.db"
 STORAGE_DIR = "estudios_firmados"
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
+# Asegurar que la tabla exista en el servidor de internet
+def iniciar_db_medico():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS estudios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dni_paciente TEXT NOT NULL,
+            tipo_estudio TEXT NOT NULL,
+            nombre_archivo TEXT NOT NULL,
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+iniciar_db_medico()
+
 # Sistema de seguridad para el centro médico
 def check_password():
     def password_entered():
@@ -43,7 +61,7 @@ if check_password():
         "Anatomía Patológica",
         "Audiología",
         "Cardiología",
-        "Clímica Médica",
+        "Clínica Médica",
         "Ecografías",
         "Endocrinología",
         "Fisiatría (Kinesiología)",
