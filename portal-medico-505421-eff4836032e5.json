@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "portal-medico-505421",
+  "private_key_id": "eff4836032e5e386152bd1031b01f3c7e203f2d9",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDF4n4KGocv2Koj\nkv7u4EX4iiFycqMGmue6MqSSYikeAE77u90k8p7VFtO0NEK1BjUXbvcfDnBlatlv\n+bDaaPdlcNrjQm6JUeh7FKmTotSLLNAgZyUC1gxoxiTDRg75tlbLCLR5tR73FKZg\n6hyCOsoyTh0tDywErvLF4Yc/sNjMCR31cikUzSXG0Z9luWd6VIW7+YyZDBpCwSC4\n3BMkMhIVjHREGiF0aFzjcTn0/AnbqyvMFBl39wuhEJF/D51K94D0dLZ65/wDjGAa\nigmL6c5nxUUb6igm7RZZr+Cdx7SQYXLkYMnKLz8PlJyRAjs0yNZolvPxt8+RatPZ\nnQDPKMKvAgMBAAECggEAVdQ2udgmwZx2s0ZbN63j+3iiKDtLtZ4zmyHDGtDjp6UX\nnP0vXoqzVJZ5jYRLWKwQFBFnszs2ie6N0BEbYag8ge2wqviR7BKwRM5B/QyXpqPx\nw9QpC/FeYYVrxZzZ+vpY6+hjKxThkOaOgaOZaOzp7WbPJc+aVo+xMh3vZTMl3Vzl\nFvQfsK1WAQFgxW0Acy2g8Dhhq5Vvd2jbztsU1iNJTLtqCSTb7Z+2EQIyY62ytBSm\nS0+pNsM7YlbIlqisQlX9zQ3haYFVNa7+UrlRSBiCvBBe6lwW+zmlQVvkZn/9sEV7\nN7KMqL5gv7G5Jf+4cbMaWq6gD44/+QQnP4/idYyWYQKBgQDz4HZ0F+UMyIl0bXLd\nM5qQ6eS6NseLEYFiarRcjhq0GUQtqR4HcmU10qMQfKXOW+6dATiWIW1RQwO+biNw\n/A15SErbbYSHDz217M7cBwuEBXmqr+R+ieEsWbi9JyEjjJB/iCFQHP4eKQBgS4Mv\n4Ak4YZLlrRjAWFb7Lc2S8AiHjwKBgQDPuL3rh7BXAWmdF1I+mzOyx/ANIoJG6WDS\nCRbQ9Vi7tMuYJ3mLpUx+6H36XqxoSazEUw0Ty4D+z/TZ5c3RsJhxgrY1v4wmBWdB\nbYvg1W7v+yheD8qpQ46q9lvx4J7mkcx6r/ceLpSsAI/FFq4FIrlpY6f+hiDPAf7m\nidakjn2C4QKBgAEnUKgf7M9wq2XHlsGBGvwQfyp6U9tOi+QhSRUe/vVXIUFuCVxT\nqDLm+ip7zHT7bleDx/a91byKqpvd/YDtUEsAkooTLItPASW5JwlXZzCKrhammlgW\n4t/I1NzgMIHwikZwKGgumu0dmIjcEpTJZIHFxGIdvX47bL3na4+EXyX1AoGAKOst\njm4mUJ1YnrdvXiHYp0k3gn7fxvRGPFnKAtOx7RgKWyi7isS/Mui9mEp6D/kjbXEm\nzFV0Tb3Nb/cS+lGdVg73sdLP2tWJp5vayCmDNwb0xsK5m2pRemAZcKZc5vKloy1y\nsqFebBuYNqznDt/uQlJ9T2hAoka0XdmdTME8/EECgYEA7RW6T44WZFEugI+e0RUe\n8R0C5Ltpj11l5dMzcGxp+RqN11t+Cv41rYW++kGgaXCN9WR4XY93i6lIqJk0SNPI\ncgy0lCYkksB2RtI7naaYfoSf9b/fmMElJcuygy7bK58FH56fCgOfH8MmhIVGGvbE\npS29h6CvQgUC5fWQlM2gGIA=\n-----END PRIVATE KEY-----\n",
+  "client_email": "streamlit@portal-medico-505421.iam.gserviceaccount.com",
+  "client_id": "107894406539201206914",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/streamlit%40portal-medico-505421.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

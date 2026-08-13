@@ -1,132 +1,105 @@
 import streamlit as st
-import sqlite3
-import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+import io
 
-DB_NAME = "centro_medico.db"
-STORAGE_DIR = "estudios_firmados"
-os.makedirs(STORAGE_DIR, exist_ok=True)
+# 1. CONFIGURACIÓN DE LAS CREDENCIALES DE GOOGLE
+# El archivo .json que descargaste debe estar en la misma carpeta que tu código
+JSON_FILE = "portal-medico-505421-eff4836032e5.json" 
 
-# Crear base de datos unificada
-def iniciar_sistema():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS estudios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            dni_paciente TEXT NOT NULL,
-            tipo_estudio TEXT NOT NULL,
-            nombre_archivo TEXT NOT NULL,
-            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# ID de tu carpeta de Drive (Cargado automáticamente desde tu captura)
+DRIVE_FOLDER_ID = "18vAA3HcfuEldb9vsvyKPYALr2WquCVUD"
 
-iniciar_sistema()
+# Nombre exacto de tu planilla de Google Sheets
+SHEETS_NAME = "informes omed" 
 
-# Panel de navegación arriba de todo
-opcion = st.sidebar.selectbox("Seleccione el Portal", ["📥 Portal del Paciente", "🔒 Acceso Médicos"])
+SCOPES = [
+    "https://googleapis.com",
+    "https://googleapis.com"
+]
 
-# ==================== PORTAL PACIENTE ====================
-if opcion == "📥 Portal del Paciente":
-    st.title("🏥 Portal del Paciente - Descarga de Estudios")
-    st.write("Ingresá tu documento para ver y descargar tus resultados.")
+def conectar_google():
+    creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_FILE, SCOPES)
+    client_sheets = gspread.authorize(creds)
+    servicio_drive = build("drive", "v3", credentials=creds)
+    return client_sheets, servicio_drive
 
-    dni_busqueda = st.text_input("Número de DNI").strip()
+# 2. INTERFAZ DE LA APLICACIÓN
+st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
+st.title("🏥 Portal de Gestión Médica (OMED)")
 
-    if st.button("Buscar mis Estudios"):
-        if dni_busqueda:
-            conn = sqlite3.connect(DB_NAME)
-            cursor = conn.cursor()
-            cursor.execute("SELECT tipo_estudio, nombre_archivo, fecha FROM estudios WHERE dni_paciente = ?", (dni_busqueda,))
-            resultados = cursor.fetchall()
-            conn.close()
-            
-            if resultados:
-                st.success(f"Se encontraron {len(resultados)} estudios disponibles:")
-                for tipo, archivo, fecha in resultados:
-                    ruta_archivo = os.path.join(STORAGE_DIR, archivo)
+opcion = st.sidebar.radio("Seleccionar Rol", ["Portal del Paciente", "Acceso Médicos"])
+
+# ----------------- PORTAL DEL PACIENTE -----------------
+if opcion == "Portal del Paciente":
+    st.header("🔍 Consulta de Estudios Médicos")
+    st.write("Ingrese su documento para descargar sus resultados disponibles.")
+    
+    dni_ingresado = st.text_input("DNI del Paciente:", max_chars=12)
+    
+    if st.button("Buscar Estudio"):
+        if dni_ingresado:
+            with st.spinner("Buscando en la base de datos..."):
+                try:
+                    client_sheets, _ = conectar_google()
+                    hoja = client_sheets.open(SHEETS_NAME).sheet1
                     
-                    if os.path.exists(ruta_archivo):
-                        with open(ruta_archivo, "rb") as f:
-                            bytes_archivo = f.read()
+                    # Busca el DNI en la columna A
+                    celda = hoja.find(dni_ingresado, in_column=1)
+                    
+                    if celda:
+                        fila_datos = hoja.row_values(celda.row)
+                        nombre_paciente = fila_datos[1]
+                        link_pdf = fila_datos[2]
                         
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.write(f"📄 **{tipo}** (Subido el: {fecha[:10]})")
-                        with col2:
-                            st.download_button(
-                                label="📥 Descargar PDF",
-                                data=bytes_archivo,
-                                file_name=archivo,
-                                mime="application/pdf",
-                                key=archivo
-                            )
+                        st.success(f"¡Hola {nombre_paciente}! Tu estudio está disponible.")
+                        st.markdown(f"📥 **[Hacer clic aquí para descargar tu estudio en PDF]({link_pdf})**")
                     else:
-                        st.warning(f"El archivo {tipo} figura en sistema pero no se encuentra en el servidor.")
-            else:
-                st.info("🔍 No se encontraron estudios para el DNI ingresado. Verificá el número o consultá en recepción.")
+                        st.error("No se encontraron estudios para el DNI ingresado.")
+                except Exception as e:
+                    st.error("Error al conectar con la base de datos permanente.")
         else:
-            st.error("⚠️ Por favor, ingresá un número de DNI válido.")
+            st.warning("Por favor, ingrese un número de DNI.")
 
-# ==================== PORTAL MÉDICOS ====================
-elif opcion == "🔒 Acceso Médicos":
-    def check_password():
-        def password_entered():
-            if st.session_state["username"] == "admin" and st.session_state["password"] == "omed2026":
-                st.session_state["password_correct"] = True
-                del st.session_state["password"]  
-                del st.session_state["username"]
-            else:
-                st.session_state["password_correct"] = False
-
-        if "password_correct" not in st.session_state:
-            st.title("🔒 Acceso Restringido - Centro Médico")
-            st.write("Por favor, identifíquese para cargar estudios.")
-            st.text_input("Usuario", key="username")
-            st.text_input("Contraseña", type="password", key="password")
-            st.button("Iniciar Sesión", on_click=password_entered)
-            return False
-        elif not st.session_state["password_correct"]:
-            st.title("🔒 Acceso Restringido - Centro Médico")
-            st.text_input("Usuario", key="username")
-            st.text_input("Contraseña", type="password", key="password")
-            st.button("Iniciar Sesión", on_click=password_entered)
-            st.error("❌ Usuario o contraseña incorrectos")
-            return False
-        return True
-
-    if check_password():
-        st.title("🏥 Panel Médico - Carga de Estudios")
-        st.subheader("Cargar nuevo informe para paciente")
-
-        dni = st.text_input("DNI del Paciente (sin puntos)").strip()
-        
-        tipo = st.selectbox("Tipo de Estudio", [
-            "Análisis Clínicos", "Anatomía Patológica", "Audiología", "Cardiología", 
-            "Clínica Médica", "Ecografías", "Endocrinología", "Fisiatría (Kinesiología)", 
-            "Fonoaudiología", "Ginecología", "Neumología", "Odontología", 
-            "Oftalmología", "Otorrinolaringología (ORL)", "Psicología", "Traumatología", "Otros"
-        ])
-        
-        archivo = st.file_uploader("Arrastrá el archivo PDF aquí", type=["pdf"])
-
-        if st.button("Guardar y Subir Estudio"):
-            if dni and tipo and archivo:
-                nombre_seguro = f"{dni}_{tipo}_{archivo.name}".replace(" ", "_")
-                ruta_completa = os.path.join(STORAGE_DIR, nombre_seguro)
-                
-                with open(ruta_completa, "wb") as f:
-                    f.write(archivo.getbuffer())
-                
-                conn = sqlite3.connect(DB_NAME)
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO estudios (dni_paciente, tipo_estudio, nombre_archivo) VALUES (?, ?, ?)", 
-                               (dni, tipo, nombre_seguro))
-                conn.commit()
-                conn.close()
-                
-                st.success(f"✅ ¡Éxito! El estudio de {tipo} fue asignado al DNI {dni}.")
-            else:
-                st.error("⚠️ Por favor, completá todos los campos y subí un archivo.")
-
+# ----------------- ACCESO MÉDICOS -----------------
+elif opcion == "Acceso Médicos":
+    st.header("👨‍⚕️ Panel de Carga para Profesionales")
+    
+    dni_paciente = st.text_input("DNI del Paciente:")
+    nombre_paciente = st.text_input("Nombre y Apellido completo:")
+    archivo_subido = st.file_uploader("Subir estudio médico (Formato PDF)", type=["pdf"])
+    
+    if st.button("Subir y Registrar Estudio"):
+        if dni_paciente and nombre_paciente and archivo_subido:
+            with st.spinner("Subiendo estudio al respaldo permanente de Drive..."):
+                try:
+                    client_sheets, servicio_drive = conectar_google()
+                    
+                    # A. Subir archivo a la carpeta específica de Google Drive
+                    nombre_archivo = f"Estudio_{dni_paciente}.pdf"
+                    metadatos = {
+                        "name": nombre_archivo,
+                        "parents": [DRIVE_FOLDER_ID]
+                    }
+                    media = MediaIoBaseUpload(io.BytesIO(archivo_subido.read()), mimetype="application/pdf")
+                    archivo_drive = servicio_drive.files().create(body=metadatos, media_body=media, fields="id").execute()
+                    id_archivo = archivo_drive.get("id")
+                    
+                    # Dar permisos públicos de lectura al archivo para que el paciente pueda descargarlo
+                    permiso = {"type": "anyone", "role": "reader"}
+                    servicio_drive.permissions().create(fileId=id_archivo, body=permiso).execute()
+                    
+                    # Generar enlace directo de visualización
+                    link_compartir = f"https://google.com{id_archivo}/view?usp=sharing"
+                    
+                    # B. Registrar datos en Google Sheets de forma permanente
+                    hoja = client_sheets.open(SHEETS_NAME).sheet1
+                    hoja.append_row([dni_paciente, nombre_paciente, link_compartir])
+                    
+                    st.success(f"¡Estudio de {nombre_paciente} subido con éxito y guardado para siempre!")
+                except Exception as e:
+                    st.error(f"Error técnico durante la carga: {e}")
+        else:
+            st.warning("Por favor, complete todos los campos y seleccione un archivo PDF.")
