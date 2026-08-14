@@ -15,8 +15,12 @@ SCOPES = [
 ]
 
 def conectar_google():
-    # Trae los datos de la cuenta de servicio guardada en los Secrets de forma segura
-    creds_dict = st.secrets["gcp_service_account"]
+    # Trae los datos en formato diccionario para poder manipular la llave
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    
+    # REPARACIÓN DE LA LLAVE: Convierte los saltos de línea de texto a formato PEM real
+    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    
     creds = service_account.Credentials.from_service_account_info(creds_dict)
     creds_with_scope = creds.with_scopes(SCOPES)
     
@@ -48,6 +52,7 @@ if opcion == "Portal del Paciente":
                     
                     if celda:
                         fila_datos = hoja.row_values(celda.row)
+                        # Índices corregidos para listas de Python (0=DNI, 1=Nombre, 2=Link)
                         nombre_paciente = fila_datos[1]
                         link_pdf = fila_datos[2]
                         
