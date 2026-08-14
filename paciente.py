@@ -1,18 +1,12 @@
 import streamlit as st
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import io
 
-# 1. CONFIGURACIÓN DE LAS CREDENCIALES DE GOOGLE
-# El archivo .json que descargaste debe estar en la misma carpeta que tu código
-JSON_FILE = "portal-medico-505421-eff4836032e5.json" 
-
-# ID de tu carpeta de Drive (Cargado automáticamente desde tu captura)
+# 1. CONFIGURACIÓN DE LAS CREDENCIALES DE GOOGLE (Desde Streamlit Secrets)
 DRIVE_FOLDER_ID = "18vAA3HcfuEldb9vsvyKPYALr2WquCVUD"
-
-# Nombre exacto de tu planilla de Google Sheets
 SHEETS_NAME = "informes omed" 
 
 SCOPES = [
@@ -21,9 +15,13 @@ SCOPES = [
 ]
 
 def conectar_google():
-    creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_FILE, SCOPES)
-    client_sheets = gspread.authorize(creds)
-    servicio_drive = build("drive", "v3", credentials=creds)
+    # Trae los datos de la cuenta de servicio guardada en los Secrets de forma segura
+    creds_dict = st.secrets["gcp_service_account"]
+    creds = service_account.Credentials.from_service_account_info(creds_dict)
+    creds_with_scope = creds.with_scopes(SCOPES)
+    
+    client_sheets = gspread.authorize(creds_with_scope)
+    servicio_drive = build("drive", "v3", credentials=creds_with_scope)
     return client_sheets, servicio_drive
 
 # 2. INTERFAZ DE LA APLICACIÓN
@@ -46,7 +44,6 @@ if opcion == "Portal del Paciente":
                     client_sheets, _ = conectar_google()
                     hoja = client_sheets.open(SHEETS_NAME).sheet1
                     
-                    # Busca el DNI en la columna A
                     celda = hoja.find(dni_ingresado, in_column=1)
                     
                     if celda:
@@ -59,47 +56,56 @@ if opcion == "Portal del Paciente":
                     else:
                         st.error("No se encontraron estudios para el DNI ingresado.")
                 except Exception as e:
-                    st.error("Error al conectar con la base de datos permanente.")
+                    st.error(f"Error al conectar con la base de datos: {e}")
         else:
             st.warning("Por favor, ingrese un número de DNI.")
 
-# ----------------- ACCESO MÉDICOS -----------------
+# ----------------- ACCESO MÉDICOS (Con bloqueo de contraseña) -----------------
 elif opcion == "Acceso Médicos":
     st.header("👨‍⚕️ Panel de Carga para Profesionales")
     
-    dni_paciente = st.text_input("DNI del Paciente:")
-    nombre_paciente = st.text_input("Nombre y Apellido completo:")
-    archivo_subido = st.file_uploader("Subir estudio médico (Formato PDF)", type=["pdf"])
+    # Sistema de seguridad con la contraseña de los Secrets
+    password_ingresada = st.text_input("Ingrese la clave médica de acceso:", type="password")
     
-    if st.button("Subir y Registrar Estudio"):
-        if dni_paciente and nombre_paciente and archivo_subido:
-            with st.spinner("Subiendo estudio al respaldo permanente de Drive..."):
-                try:
-                    client_sheets, servicio_drive = conectar_google()
-                    
-                    # A. Subir archivo a la carpeta específica de Google Drive
-                    nombre_archivo = f"Estudio_{dni_paciente}.pdf"
-                    metadatos = {
-                        "name": nombre_archivo,
-                        "parents": [DRIVE_FOLDER_ID]
-                    }
-                    media = MediaIoBaseUpload(io.BytesIO(archivo_subido.read()), mimetype="application/pdf")
-                    archivo_drive = servicio_drive.files().create(body=metadatos, media_body=media, fields="id").execute()
-                    id_archivo = archivo_drive.get("id")
-                    
-                    # Dar permisos públicos de lectura al archivo para que el paciente pueda descargarlo
-                    permiso = {"type": "anyone", "role": "reader"}
-                    servicio_drive.permissions().create(fileId=id_archivo, body=permiso).execute()
-                    
-                    # Generar enlace directo de visualización
-                    link_compartir = f"https://google.com{id_archivo}/view?usp=sharing"
-                    
-                    # B. Registrar datos en Google Sheets de forma permanente
-                    hoja = client_sheets.open(SHEETS_NAME).sheet1
-                    hoja.append_row([dni_paciente, nombre_paciente, link_compartir])
-                    
-                    st.success(f"¡Estudio de {nombre_paciente} subido con éxito y guardado para siempre!")
-                except Exception as e:
-                    st.error(f"Error técnico durante la carga: {e}")
-        else:
-            st.warning("Por favor, complete todos los campos y seleccione un archivo PDF.")
+    if password_ingresada == st.secrets["medicos"]["password"]:
+        st.success("Acceso concedido al panel de carga.")
+        st.divider()
+        
+        dni_paciente = st.text_input("DNI del Paciente:")
+        nombre_paciente = st.text_input("Nombre y Apellido completo:")
+        archivo_subido = st.file_uploader("Subir estudio médico (Formato PDF)", type=["pdf"])
+        
+        if st.button("Subir y Registrar Estudio"):
+            if dni_paciente and nombre_paciente and archivo_subido:
+                with st.spinner("Subiendo estudio al respaldo permanente de Drive..."):
+                    try:
+                        client_sheets, servicio_drive = conectar_google()
+                        
+                        # A. Subir archivo a Google Drive
+                        nombre_archivo = f"Estudio_{dni_paciente}.pdf"
+                        metadatos = {
+                            "name": nombre_archivo,
+                            "parents": [DRIVE_FOLDER_ID]
+                        }
+                        media = MediaIoBaseUpload(io.BytesIO(archivo_subido.read()), mimetype="application/pdf")
+                        archivo_drive = servicio_drive.files().create(body=metadatos, media_body=media, fields="id").execute()
+                        id_archivo = archivo_drive.get("id")
+                        
+                        # Permisos públicos de lectura para el archivo en Drive
+                        permiso = {"type": "anyone", "role": "reader"}
+                        servicio_drive.permissions().create(fileId=id_archivo, body=permiso).execute()
+                        
+                        # Enlace directo de descarga corregido
+                        link_compartir = f"https://google.com{id_archivo}&export=download"
+                        
+                        # B. Registrar datos en Google Sheets
+                        hoja = client_sheets.open(SHEETS_NAME).sheet1
+                        hoja.append_row([dni_paciente, nombre_paciente, link_compartir])
+                        
+                        st.success(f"¡Estudio de {nombre_paciente} subido con éxito y guardado para siempre!")
+                    except Exception as e:
+                        st.error(f"Error técnico durante la carga: {e}")
+            else:
+                st.warning("Por favor, complete todos los campos y seleccione un archivo PDF.")
+    elif password_ingresada != "":
+        st.error("Contraseña incorrecta. Intente nuevamente.")
