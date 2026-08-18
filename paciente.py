@@ -30,16 +30,20 @@ if st.button("Buscar mis Estudios"):
     if dni_busqueda:
         with st.spinner("Buscando en el sistema..."):
             try:
-                # Leemos la base de datos local de forma inmediata
+                # Leemos la base de datos local
                 df = pd.read_csv(DB_FILE)
-                df["DNI"] = df["DNI"].astype(str).str.strip()
                 
-                # Buscamos la fila correspondiente al DNI del paciente
-                registro = df[df["DNI"] == dni_busqueda.strip()]
+                # Convertimos la columna a texto limpio para que coincida siempre
+                df["DNI"] = df["DNI"].astype(str).str.strip()
+                dni_limpio = str(dni_busqueda).strip()
+                
+                # Buscamos el registro correspondiente al DNI
+                registro = df[df["DNI"] == dni_limpio]
                 
                 if not registro.empty:
-                    nombre_paciente = registro.iloc[0]["Nombre"]
-                    ruta_archivo_pdf = registro.iloc[0]["Enlace_PDF"]
+                    # Extracción segura de celdas por valores nativos
+                    nombre_paciente = registro["Nombre"].values[0]
+                    ruta_archivo_pdf = registro["Enlace_PDF"].values[0]
                     
                     st.success(f"✅ Estudio encontrado para: {nombre_paciente}")
                     
@@ -48,15 +52,15 @@ if st.button("Buscar mis Estudios"):
                         with open(ruta_archivo_pdf, "rb") as f:
                             bytes_pdf = f.read()
                         
-                        # Botón de descarga oficial y directa para el paciente
+                        # BOTÓN CORREGIDO: Cambiado 'mimetype' por 'mime' para evitar el error
                         st.download_button(
                             label="⬇️ Descargar mi Informe Médico (PDF)",
                             data=bytes_pdf,
                             file_name=os.path.basename(ruta_archivo_pdf),
-                            mimetype="application/pdf"
+                            mime="application/pdf"
                         )
                     else:
-                        st.error("El archivo PDF del estudio no se encuentra disponible. Contacte al centro médico.")
+                        st.error("El archivo PDF del estudio no se encuentra disponible físicamente. Contacte al centro médico.")
                 else:
                     st.warning("⚠️ No se encontraron registros para el DNI ingresado. Verifique el número.")
             except Exception as e:
@@ -73,7 +77,6 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
     
     password_input = st.text_input("Introduzca la clave médica:", type="password", key="med_pass")
     
-    # Validación segura con contraseña por defecto
     if password_input == "omed123":
         st.success("🔓 Panel de carga desbloqueado.")
         
@@ -97,7 +100,7 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
                         # 3. Registramos la información de manera permanente en el archivo CSV local
                         df_actual = pd.read_csv(DB_FILE)
                         nueva_fila = pd.DataFrame([{"DNI": str(dni_paciente).strip(), "Nombre": nombre_paciente, "Enlace_PDF": ruta_destino_final}])
-                        df_actual = pd.concat([df_actual, nueva_fila], ignore_index=False)
+                        df_actual = pd.concat([df_actual, nueva_fila], ignore_index=True)
                         df_actual.to_csv(DB_FILE, index=False)
                         
                         st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} ya está disponible de forma permanente en el portal.")
