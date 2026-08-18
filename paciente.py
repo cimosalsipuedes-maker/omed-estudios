@@ -6,7 +6,7 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# PALETA DE COLORES IDENTITARIA DE TU LOGO "OMED" (INMUNE A BLOQUEOS)
+# PALETA DE COLORES IDENTITARIA DE TU LOGO "OMED" (DISEÑO LIMPIO)
 # =====================================================================
 # Azul Omed: #001a57 | Turquesa Omed: #1dd4b6 | Fondo Médico: #f7f9fc
 st.markdown(
@@ -50,9 +50,9 @@ st.markdown(
     }
     .logo-text-secundario {
         color: #001a57 !important; /* Azul Omed */
-        font-size: 14px !important;
+        font-size: 15px !important;
         font-weight: 700 !important;
-        margin-top: 2px !important;
+        margin-top: 5px !important;
         text-transform: uppercase;
         letter-spacing: 3px;
     }
@@ -93,12 +93,13 @@ st.markdown(
     }
     </style>
     
-    <!-- Construcción del isotipo tipográfico exacto de tu logo -->
+    <!-- Construcción del isotipo tipográfico sin imágenes rotas externas -->
     <div class="logo-container">
         <div>
             <span class="logo-text-simbolo">O</span>
             <h1 class="logo-text-principal">omed</h1>
         </div>
+        <!-- Texto corregido a un solo renglón oficial -->
         <div class="logo-text-secundario">Centro Médico Salsipuedes</div>
     </div>
     """,
