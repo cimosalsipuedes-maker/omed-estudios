@@ -2,28 +2,17 @@ import streamlit as st
 import pandas as pd
 import os
 
-# Configuración de la página unificada y profesional
+# Configuración de la página unificada y profesional con logo nativo en la barra
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CABECERA INSTITUCIONAL: LOGO OFICIAL LOCAL DIRECTO (SIN COLUMNAS)
+# 1. CABECERA INSTITUCIONAL: LOGO MÉDICO CERTIFICADO OFICIAL
 # =====================================================================
-# El sistema busca el archivo local de la imagen de forma directa e indestructible
-URL_LOGO_LOCAL = "logo omed.jpg"
+# Usamos un enlace directo de alta disponibilidad para el isotipo médico
+URL_LOGO_OFICIAL = "https://flaticon.com"
 
-if os.path.exists(URL_LOGO_LOCAL):
-    # Centramos la imagen usando HTML nativo y le damos un tamaño estético controlado
-    st.markdown(
-        f"""
-        <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-            <img src="app/static/{URL_LOGO_LOCAL}" style="width: 200px; height: auto; border-radius: 8px;">
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-else:
-    # Respaldo visual si el archivo local tuviera alguna demora de lectura
-    st.markdown("<h1 style='text-align: center; color: #1e3d59;'>🏥 CIMO</h1>", unsafe_allow_html=True)
+# Colocamos el logo arriba centrado de forma nativa e indestructible
+st.image(URL_LOGO_OFICIAL, width=90)
 
 # Separador estético
 st.markdown("<br>", unsafe_allow_html=True)
@@ -42,8 +31,8 @@ if not os.path.exists(CARPETA_PDFS):
 # =====================================================================
 # 2. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE (CON CONTRASEÑA GENERAL)
 # =====================================================================
-st.markdown("<h2 style='text-align: center;'>Portal de Estudios Médicos</h2>", unsafe_allow_html=True)
-st.write("<p style='text-align: center; color: #888;'>Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.</p>", unsafe_allow_html=True)
+st.markdown("<h2 style='color: white;'>Portal de Estudios Médicos</h2>", unsafe_allow_html=True)
+st.write("<p style='color: #aaa;'>Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.</p>", unsafe_allow_html=True)
 
 # Cajas de acceso obligatorio para el paciente
 dni_busqueda = st.text_input("Ingrese su número de DNI (sin puntos):", max_chars=10)
@@ -66,8 +55,8 @@ if st.button("Buscar mis Estudios"):
                 registro = df[df["DNI"] == dni_limpio]
                 
                 if not registro.empty:
-                    nombre_paciente = registro["Nombre"].values
-                    ruta_archivo_pdf = registro["Enlace_PDF"].values
+                    nombre_paciente = registro["Nombre"].values[0]
+                    ruta_archivo_pdf = registro["Enlace_PDF"].values[0]
                     
                     st.success(f"✅ Estudio encontrado para: {nombre_paciente}")
                     
