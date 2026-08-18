@@ -6,47 +6,22 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# CONFIGURACIÓN VISUAL: LOGO DE FONDO EN ALTA RESOLUCIÓN INMUNE A BLOQUEOS
+# 1. CABECERA INSTITUCIONAL: LOGO OFICIAL DE CIMO (NUEVA IMAGEN)
 # =====================================================================
-# Usamos una URL alternativa directa de respaldo para el diseño médico
-URL_MEDICA_ESTETICA = "https://freepik.com"
+# Enlazamos directamente al ID del nuevo archivo 'logo omed.jpg' que está público en tu Drive
+URL_LOGO_CIMO = "https://google.com"
 
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-image: url("{URL_MEDICA_ESTETICA}");
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-        background-position: center;
-        background-size: 35%; /* Tamaño ideal para que quede estético de fondo */
-        background-color: #f4f7f6; /* Color de fondo suavizado */
-    }}
-    /* Capa blanca translúcida para que los textos resalten al 100% */
-    .block-container {{
-        background-color: rgba(255, 255, 255, 0.95);
-        padding: 3rem 2rem;
-        border-radius: 12px;
-        box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.08);
-        margin-top: 3rem;
-    }}
-    /* Color de contraste para el botón de búsqueda */
-    .stButton>button {{
-        width: 100%;
-        background-color: #1e3d59;
-        color: white;
-        border-radius: 6px;
-        border: none;
-        padding: 0.5rem;
-    }}
-    .stButton>button:hover {{
-        background-color: #17b978;
-        color: white;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# Estructura de tres columnas para centrar el logo de forma elegante arriba
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    try:
+        st.image(URL_LOGO_CIMO, use_container_width=True)
+    except:
+        # Respaldo de texto por seguridad si el servidor de Google demora
+        st.markdown("<h2 style='text-align: center; color: #1e3d59;'>🏥 CIMO</h2>", unsafe_allow_html=True)
+
+# Separador estético
+st.markdown("<br>", unsafe_allow_html=True)
 
 # Nombre del archivo base de datos local
 DB_FILE = "base_datos_informes.csv"
@@ -60,16 +35,15 @@ if not os.path.exists(CARPETA_PDFS):
     os.makedirs(CARPETA_PDFS)
 
 # =====================================================================
-# 1. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE (CON CONTRASEÑA GENERAL)
+# 2. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE (CON CONTRASEÑA GENERAL)
 # =====================================================================
-st.title("🏥 Portal de Estudios Médicos - OMED")
-st.write("Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.")
+st.markdown("<h2 style='text-align: center; color: #1e3d59;'>Portal de Estudios Médicos</h2>", unsafe_allow_html=True)
+st.write("<p style='text-align: center; color: #666;'>Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.</p>", unsafe_allow_html=True)
 
 # Cajas de acceso obligatorio para el paciente
 dni_busqueda = st.text_input("Ingrese su número de DNI (sin puntos):", max_chars=10)
 pass_paciente = st.text_input("Ingrese la contraseña general del portal:", type="password")
 
-# CONTRASEÑA GENERAL PARA PACIENTES (Ajustada como solicitaste)
 CLAVE_GENERAL_PACIENTES = "omed2026"
 
 if st.button("Buscar mis Estudios"):
@@ -110,7 +84,7 @@ if st.button("Buscar mis Estudios"):
                 st.error(f"Error al leer el sistema de archivos: {e}")
 
 # =====================================================================
-# 2. ACCESO EXCLUSIVO PARA MÉDICOS
+# 3. ACCESO EXCLUSIVO PARA MÉDICOS (Panel oculto seguro)
 # =====================================================================
 st.markdown("---")
 with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
