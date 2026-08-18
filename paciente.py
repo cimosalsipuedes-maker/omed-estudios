@@ -1,4 +1,6 @@
 import streamlit as st
+import gspread
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import os
@@ -7,47 +9,30 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CONEXIÓN INMUNE A ERRORES (Delegada en el motor interno de Streamlit)
+# 1. CONEXIÓN NATIVA ESTÁNDAR A GOOGLE
 # =====================================================================
 @st.cache_resource
 def inicializar_conexiones():
     try:
-        # Usamos la conexión nativa de Streamlit para Google sheets (Inmune a errores de bytes)
-        conn = st.connection("gsheets", type=gspread_connection)
-        gc = conn._client
+        # Levantamos las credenciales desde la sección oficial connections.gsheets
+        creds_dict = dict(st.secrets["connections"]["gsheets"])
+        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
         
-        # Levantamos las credenciales internas para Drive de forma directa
-        creds = conn._credentials
+        scopes = [
+            "https://googleapis.com",
+            "https://googleapis.com"
+        ]
+        
+        # Conexión directa y nativa
+        creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
         gdrive = build('drive', 'v3', credentials=creds)
-        
+        gc = gspread.authorize(creds)
         return gdrive, gc
     except Exception as e:
-        # Plan de contingencia automático si no encuentra la librería extendida
-        try:
-            import gspread
-            from google.oauth2 import service_account
-            creds_dict = dict(st.secrets["gcp_service_account"])
-            # Limpieza rápida por si acaso
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-            scopes = ["https://googleapis.com", "https://googleapis.com"]
-            creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
-            return build('drive', 'v3', credentials=creds), gspread.authorize(creds)
-        except Exception as ex:
-            st.error(f"Error en la firma de credenciales: {ex}")
-            return None, None
+        st.error(f"Error crítico en la firma de credenciales: {e}")
+        return None, None
 
-# Variable de compatibilidad interna para Streamlit
-class gspread_connection(st.connections.BaseConnection):
-    def _connect(self, **kwargs):
-        import gspread
-        from google.oauth2 import service_account
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-        scopes = ["https://googleapis.com", "https://googleapis.com"]
-        creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
-        return gspread.authorize(creds)
-
-# Inicializamos las bases de datos globales
+# Inicializamos los servicios
 drive_service, gc = inicializar_conexiones()
 
 DRIVE_FOLDER_ID = "18vAA3HcfuEldb9vsvyKPYALr2WquCVUD"
@@ -92,7 +77,7 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
     
     password_input = st.text_input("Introduzca la clave médica:", type="password", key="med_pass")
     
-    if password_input == "omed123":
+    if password_input == st.secrets["medicos"]["password"]:
         st.success("🔓 Panel de carga desbloqueado.")
         
         dni_paciente = st.text_input("DNI del Paciente (Sin puntos ni espacios):")
