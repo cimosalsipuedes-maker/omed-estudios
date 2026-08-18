@@ -4,25 +4,31 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import os
+import re
 
 # Configuración de la página unificada
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CONEXIÓN SEGURA A GOOGLE CLOUD
+# 1. CONEXIÓN SEGURA A GOOGLE CLOUD (Formateador Estricto de 64 caracteres)
 # =====================================================================
 @st.cache_resource
 def inicializar_conexiones():
     try:
         creds_dict = dict(st.secrets["gcp_service_account"])
         
-        # Limpieza automática de la llave privada para evitar errores de formato o padding
-        pkey = creds_dict["private_key"].strip()
-        pkey = pkey.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
-        pkey = pkey.replace("\\n", "\n").replace(" ", "").strip()
+        # 1. Extraemos el texto puro de la llave omitiendo encabezados y espacios
+        raw_key = creds_dict["private_key"]
+        raw_key = raw_key.replace("-----BEGIN PRIVATE KEY-----", "")
+        raw_key = raw_key.replace("-----END PRIVATE KEY-----", "")
+        raw_key = re.sub(r'\s+', '', raw_key)  # Elimina saltos de línea, espacios y \n sueltos
         
-        # Reconstrucción limpia del formato exigido por Google
-        private_key_limpia = f"-----BEGIN PRIVATE KEY-----\n{pkey}\n-----END PRIVATE KEY-----\n"
+        # 2. ALGORITMO PEM: Trozar el texto en líneas perfectas de exactamente 64 caracteres
+        lineas_64 = [raw_key[i:i+64] for i in range(0, len(raw_key), 64)]
+        bloque_base64_correcto = "\n".join(lineas_64)
+        
+        # 3. Reconstrucción final con la estructura limpia que exige la librería
+        private_key_limpia = f"-----BEGIN PRIVATE KEY-----\n{bloque_base64_correcto}\n-----END PRIVATE KEY-----\n"
         creds_dict["private_key"] = private_key_limpia
         
         scopes = [
@@ -30,6 +36,7 @@ def inicializar_conexiones():
             "https://googleapis.com"
         ]
         
+        # Autenticación directa de Google
         creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
         gdrive = build('drive', 'v3', credentials=creds)
         gsheets = gspread.authorize(creds)
