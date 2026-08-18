@@ -34,12 +34,6 @@ st.markdown(
         padding-bottom: 15px;
         border-bottom: 4px solid #1dd4b6; /* Línea Turquesa Omed */
     }
-    .logo-text-simbolo {
-        color: #1dd4b6 !important; /* Turquesa Omed */
-        font-size: 46px !important;
-        font-weight: 800 !important;
-        display: inline-block;
-    }
     .logo-text-principal {
         color: #001a57 !important; /* Azul Omed */
         font-size: 52px !important;
@@ -93,14 +87,13 @@ st.markdown(
     }
     </style>
     
-    <!-- Construcción del isotipo tipográfico sin imágenes rotas externas -->
+    <!-- Construcción del isotipo tipográfico sin imágenes rotas ni cuadros flotantes -->
     <div class="logo-container">
         <div>
-            <span class="logo-text-simbolo">O</span>
             <h1 class="logo-text-principal">omed</h1>
         </div>
-        <!-- Texto corregido a un solo renglón oficial -->
-        <div class="logo-text-secundario">Centro Médico Salsipuedes</div>
+        <!-- Texto corregido en un solo renglón prolijo -->
+        <div class="logo-text-secundario">Centro Médico</div>
     </div>
     """,
     unsafe_allow_html=True
