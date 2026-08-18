@@ -6,18 +6,24 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CABECERA INSTITUCIONAL: LOGO OFICIAL LOCAL (INMUNE A BLOQUEOS)
+# 1. CABECERA INSTITUCIONAL: LOGO OFICIAL LOCAL DIRECTO (SIN COLUMNAS)
 # =====================================================================
-# El sistema busca el archivo con el nombre exacto que subiste a GitHub
+# El sistema busca el archivo local de la imagen de forma directa e indestructible
 URL_LOGO_LOCAL = "logo omed.jpg"
 
-col1, col2, col3 = st.columns()
-with col2:
-    if os.path.exists(URL_LOGO_LOCAL):
-        st.image(URL_LOGO_LOCAL, use_container_width=True)
-    else:
-        # Respaldo visual elegante si el archivo no se encuentra
-        st.markdown("<h2 style='text-align: center;'>🏥 CIMO</h2>", unsafe_allow_html=True)
+if os.path.exists(URL_LOGO_LOCAL):
+    # Centramos la imagen usando HTML nativo y le damos un tamaño estético controlado
+    st.markdown(
+        f"""
+        <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+            <img src="app/static/{URL_LOGO_LOCAL}" style="width: 200px; height: auto; border-radius: 8px;">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+else:
+    # Respaldo visual si el archivo local tuviera alguna demora de lectura
+    st.markdown("<h1 style='text-align: center; color: #1e3d59;'>🏥 CIMO</h1>", unsafe_allow_html=True)
 
 # Separador estético
 st.markdown("<br>", unsafe_allow_html=True)
