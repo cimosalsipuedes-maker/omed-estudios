@@ -6,19 +6,18 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CABECERA INSTITUCIONAL: LOGO OFICIAL DE CIMO (NUEVA IMAGEN)
+# 1. CABECERA INSTITUCIONAL: LOGO OFICIAL LOCAL (INMUNE A BLOQUEOS)
 # =====================================================================
-# Enlazamos directamente al ID del nuevo archivo 'logo omed.jpg' que está público en tu Drive
-URL_LOGO_CIMO = "https://google.com"
+# El sistema busca el archivo con el nombre exacto que subiste a GitHub
+URL_LOGO_LOCAL = "logo omed.jpg"
 
-# Estructura de tres columnas para centrar el logo de forma elegante arriba
-col1, col2, col3 = st.columns([1, 2, 1])
+col1, col2, col3 = st.columns()
 with col2:
-    try:
-        st.image(URL_LOGO_CIMO, use_container_width=True)
-    except:
-        # Respaldo de texto por seguridad si el servidor de Google demora
-        st.markdown("<h2 style='text-align: center; color: #1e3d59;'>🏥 CIMO</h2>", unsafe_allow_html=True)
+    if os.path.exists(URL_LOGO_LOCAL):
+        st.image(URL_LOGO_LOCAL, use_container_width=True)
+    else:
+        # Respaldo visual elegante si el archivo no se encuentra
+        st.markdown("<h2 style='text-align: center;'>🏥 CIMO</h2>", unsafe_allow_html=True)
 
 # Separador estético
 st.markdown("<br>", unsafe_allow_html=True)
@@ -37,8 +36,8 @@ if not os.path.exists(CARPETA_PDFS):
 # =====================================================================
 # 2. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE (CON CONTRASEÑA GENERAL)
 # =====================================================================
-st.markdown("<h2 style='text-align: center; color: #1e3d59;'>Portal de Estudios Médicos</h2>", unsafe_allow_html=True)
-st.write("<p style='text-align: center; color: #666;'>Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.</p>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center;'>Portal de Estudios Médicos</h2>", unsafe_allow_html=True)
+st.write("<p style='text-align: center; color: #888;'>Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.</p>", unsafe_allow_html=True)
 
 # Cajas de acceso obligatorio para el paciente
 dni_busqueda = st.text_input("Ingrese su número de DNI (sin puntos):", max_chars=10)
@@ -61,8 +60,8 @@ if st.button("Buscar mis Estudios"):
                 registro = df[df["DNI"] == dni_limpio]
                 
                 if not registro.empty:
-                    nombre_paciente = registro["Nombre"].values[0]
-                    ruta_archivo_pdf = registro["Enlace_PDF"].values[0]
+                    nombre_paciente = registro["Nombre"].values
+                    ruta_archivo_pdf = registro["Enlace_PDF"].values
                     
                     st.success(f"✅ Estudio encontrado para: {nombre_paciente}")
                     
