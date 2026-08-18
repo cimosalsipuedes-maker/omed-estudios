@@ -5,12 +5,16 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import os
 
+# Configuración de la página unificada
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
-# Conexión nativa limpia sin alteración de caracteres
+# =====================================================================
+# 1. CONEXIÓN SEGURA A GOOGLE CLOUD
+# =====================================================================
 @st.cache_resource
 def inicializar_conexiones():
     try:
+        # Cargamos el diccionario desde Secrets e interpretamos los saltos de línea
         creds_dict = dict(st.secrets["gcp_service_account"])
         creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
         
@@ -19,21 +23,31 @@ def inicializar_conexiones():
             "https://googleapis.com"
         ]
         
+        # Autenticación directa y nativa de Google
         creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        
         gdrive = build('drive', 'v3', credentials=creds)
         gsheets = gspread.authorize(creds)
+        
         return gdrive, gsheets
     except Exception as e:
         st.error(f"Error crítico de conexión: {e}")
         return None, None
 
+# Inicializamos los servicios
 drive_service, gc = inicializar_conexiones()
-DRIVE_FOLDER_ID = "18vAA3HcfuEldb9vsvyKPYALr2WquCVUD" [UIgD6k]
-SHEET_NAME = "informes omed" [cmQIOo]
 
+# Constantes de tus bases de datos permanentes (Limpias sin etiquetas)
+DRIVE_FOLDER_ID = "18vAA3HcfuEldb9vsvyKPYALr2WquCVUD"
+SHEET_NAME = "informes omed"
+
+# =====================================================================
+# 2. PANTALLA UNIFICADA: PORTAL DEL PACIENTE
+# =====================================================================
 st.title("🏥 Portal de Estudios Médicos - OMED")
 st.write("Bienvenido. Ingrese su número de documento para descargar sus resultados.")
 
+# Buscador para el paciente
 dni_busqueda = st.text_input("Ingrese su número de DNI (sin puntos):", max_chars=10)
 
 if st.button("Buscar mis Estudios"):
@@ -42,6 +56,7 @@ if st.button("Buscar mis Estudios"):
             try:
                 sheet = gc.open(SHEET_NAME).sheet1
                 registros = sheet.get_all_records()
+                
                 encontrado = False
                 for fila in registros:
                     if str(fila.get("DNI")).strip() == dni_busqueda.strip():
@@ -49,18 +64,27 @@ if st.button("Buscar mis Estudios"):
                         st.markdown(f"🔗 [Haga clic aquí para descargar su informe en PDF]({fila.get('Enlace_PDF')})")
                         encontrado = True
                         break
+                
                 if not encontrado:
-                    st.warning("⚠️ No se encontraron registros para el DNI ingresado.")
+                    st.warning("⚠️ No se encontraron registros para el DNI ingresado. Verifique el número.")
             except Exception as e:
                 st.error(f"Error al conectar con la base de datos: {e}")
     else:
         st.info("Por favor, escriba un número de DNI para iniciar la búsqueda.")
 
+# =====================================================================
+# 3. ACCESO EXCLUSIVO PARA MÉDICOS
+# =====================================================================
 st.markdown("---")
 with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
+    st.write("Área restringida para la carga de nuevos estudios al sistema.")
+    
     password_input = st.text_input("Introduzca la clave médica:", type="password", key="med_pass")
+    
     if password_input == st.secrets["medicos"]["password"]:
         st.success("🔓 Panel de carga desbloqueado.")
+        
+        # Formulario interno de carga
         dni_paciente = st.text_input("DNI del Paciente (Sin puntos ni espacios):")
         nombre_paciente = st.text_input("Nombre Completo del Paciente:")
         archivo_pdf = st.file_uploader("Seleccione el archivo PDF del estudio:", type=["pdf"])
@@ -73,11 +97,18 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
                         with open(nombre_archivo, "wb") as f:
                             f.write(archivo_pdf.getbuffer())
                         
-                        metadata = {'name': nombre_archivo, 'parents': [DRIVE_FOLDER_ID]}
+                        metadata = {
+                            'name': nombre_archivo,
+                            'parents': [DRIVE_FOLDER_ID]
+                        }
                         media = MediaFileUpload(nombre_archivo, mimetype='application/pdf')
                         archivo_drive = drive_service.files().create(body=metadata, media_body=media, fields='id, webViewLink').execute()
                         
-                        drive_service.permissions().create(fileId=archivo_drive.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
+                        drive_service.permissions().create(
+                            fileId=archivo_drive.get('id'),
+                            body={'type': 'anyone', 'role': 'reader'}
+                        ).execute()
+                        
                         link_pdf = archivo_drive.get('webViewLink')
                         
                         if os.path.exists(nombre_archivo):
@@ -85,8 +116,12 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
                         
                         sheet = gc.open(SHEET_NAME).sheet1
                         sheet.append_row([dni_paciente, nombre_paciente, link_pdf])
-                        st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} ya está disponible.")
+                        
+                        st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} ya está disponible en el portal público.")
                     except Exception as e:
                         st.error(f"Error en el proceso de carga: {e}")
+            else:
+                st.error("Faltan datos obligatorios para procesar la subida.")
+                
     elif password_input != "":
-        st.error("❌ Contraseña incorrecta.")
+        st.error("❌ Contraseña incorrecta. Acceso denegado.")
