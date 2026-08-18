@@ -9,11 +9,11 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CONEXIÓN DIRECTA CORREGIDA (Llave Certificada e Inmune a Padding)
+# 1. CONEXIÓN DIRECTA CORREGIDA (Sin residuos ni datos extraños)
 # =====================================================================
 def inicializar_conexiones():
     try:
-        # Inyección directa de la cadena PEM nativa con firma digital completa
+        # Texto unificado con formato estricto y limpio
         pkey = (
             "-----BEGIN PRIVATE KEY-----\n"
             "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDF4n4KGocv2Koj\n"
@@ -43,7 +43,7 @@ def inicializar_conexiones():
             "IqJk0SNPIncgy0lCYkksB2RtI7naaYfoSf9b/fmME1Jcuygy7bK58FH56fcGOfH\n"
             "8MmhIVGGVbEnPs29h6CvQgUc5fWQ1M2gGIA==\n"
             "-----END PRIVATE KEY-----\n"
-        )
+        ).strip() # Elimina cualquier espacio extra fantasma al principio o final
 
         info_servicio = {
             "type": "service_account",
@@ -66,13 +66,13 @@ def inicializar_conexiones():
         
         creds = service_account.Credentials.from_service_account_info(info_servicio, scopes=scopes)
         gdrive = build('drive', 'v3', credentials=creds)
-        gsheets = gspread.authorize(creds)
-        return gdrive, gsheets
+        gc = gspread.authorize(creds)
+        return gdrive, gc
     except Exception as e:
         st.error(f"Error crítico en la firma de credenciales: {e}")
         return None, None
 
-# Activación remota
+# Inicialización activa
 drive_service, gc = inicializar_conexiones()
 
 DRIVE_FOLDER_ID = "18vAA3HcfuEldb9vsvyKPYALr2WquCVUD"
