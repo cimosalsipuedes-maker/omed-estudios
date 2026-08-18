@@ -73,7 +73,6 @@ st.markdown(
         transition: all 0.3s ease;
         box-shadow: 0px 4px 12px rgba(0, 26, 87, 0.15);
     }
-    /* El botón cambia a turquesa brillante cuando pasas el mouse por encima */
     .stButton>button:hover {
         background-color: #1dd4b6 !important;
         color: #001a57 !important;
@@ -87,12 +86,11 @@ st.markdown(
     }
     </style>
     
-    <!-- Construcción del isotipo tipográfico sin imágenes rotas ni cuadros flotantes -->
+    <!-- Construcción del isotipo tipográfico corporativo limpio -->
     <div class="logo-container">
         <div>
             <h1 class="logo-text-principal">omed</h1>
         </div>
-        <!-- Texto corregido en un solo renglón prolijo -->
         <div class="logo-text-secundario">Centro Médico</div>
     </div>
     """,
@@ -137,15 +135,18 @@ if st.button("Buscar mis Estudios"):
                 registro = df[df["DNI"] == dni_limpio]
                 
                 if not registro.empty:
-                    nombre_paciente = registro["Nombre"].values
-                    ruta_archivo_pdf = registro["Enlace_PDF"].values
+                    # Extracción técnica segura forzando string nativo (.item()) para evitar colisiones
+                    nombre_paciente = str(registro["Nombre"].values[0])
+                    ruta_archivo_pdf = str(registro["Enlace_PDF"].values[0])
                     
                     st.success(f"✅ Estudio encontrado para: {nombre_paciente}")
                     
+                    # Verificamos la existencia física real de la ruta limpia
                     if os.path.exists(ruta_archivo_pdf):
                         with open(ruta_archivo_pdf, "rb") as f:
                             bytes_pdf = f.read()
                         
+                        # Botón oficial directo de descarga
                         st.download_button(
                             label="⬇️ Descargar mi Informe Médico (PDF)",
                             data=bytes_pdf,
