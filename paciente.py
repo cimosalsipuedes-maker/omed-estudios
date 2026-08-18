@@ -2,20 +2,27 @@ import streamlit as st
 import pandas as pd
 import os
 
-# Configuración de la página unificada y profesional con logo nativo en la barra
+# Configuración de la página unificada y profesional con icono nativo en la pestaña
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CABECERA INSTITUCIONAL: LOGO MÉDICO CERTIFICADO OFICIAL
+# 1. CABECERA INSTITUCIONAL: LOGO OFICIAL DE CIMO (DIRECCIÓN WEB DIRECTA)
 # =====================================================================
-# Usamos un enlace directo de alta disponibilidad para el isotipo médico
-URL_LOGO_OFICIAL = "https://flaticon.com"
+# Dirección web directa del logo de CIMO alojada en un servidor de imágenes seguro
+URL_LOGO_CIMO = "https://postimg.cc"
 
-# Colocamos el logo arriba centrado de forma nativa e indestructible
-st.image(URL_LOGO_OFICIAL, width=90)
-
-# Separador estético
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
+        <img src="{URL_LOGO_CIMO}" style="width: 150px; height: auto; border-radius: 10px; box-shadow: 0px 4px 12px rgba(255,255,255,0.1);">
+    </div>
+    <div style="text-align: center; margin-bottom: 25px;">
+        <h1 style="color: white; margin-top: 15px; font-size: 32px; font-weight: 700;">OMED</h1>
+        <h4 style="color: #17b978; margin-top: -10px; font-weight: 600;">Centro Médico Salsipuedes</h4>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # Nombre del archivo base de datos local
 DB_FILE = "base_datos_informes.csv"
@@ -31,8 +38,8 @@ if not os.path.exists(CARPETA_PDFS):
 # =====================================================================
 # 2. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE (CON CONTRASEÑA GENERAL)
 # =====================================================================
-st.markdown("<h2 style='color: white;'>Portal de Estudios Médicos</h2>", unsafe_allow_html=True)
-st.write("<p style='color: #aaa;'>Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.</p>", unsafe_allow_html=True)
+st.markdown("<h3 style='color: white; text-align: center;'>Portal de Estudios Médicos</h3>", unsafe_allow_html=True)
+st.write("<p style='color: #aaa; text-align: center;'>Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.</p>", unsafe_allow_html=True)
 
 # Cajas de acceso obligatorio para el paciente
 dni_busqueda = st.text_input("Ingrese su número de DNI (sin puntos):", max_chars=10)
