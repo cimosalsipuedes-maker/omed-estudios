@@ -9,12 +9,12 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# 1. CONEXIÓN DIRECTA CORREGIDA (Sin residuos ni datos extraños)
+# 1. CONEXIÓN DIRECTA CERTIFICADA (Inmune a residuos y saltos extraños)
 # =====================================================================
 def inicializar_conexiones():
     try:
-        # Texto unificado con formato estricto y limpio
-        pkey = (
+        # Texto unificado corregido a nivel de bytes para evitar el error 'extra data'
+        private_key_limpia = (
             "-----BEGIN PRIVATE KEY-----\n"
             "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDF4n4KGocv2Koj\n"
             "nkv7u4EX4iIFycqMGmue6MQSsYikeAE77u90k8p7VFT0ONEK1BjUXbvcfDnBlatl\n"
@@ -37,19 +37,19 @@ def inicializar_conexiones():
             "vXtnqdLm+ip7zHT7bIeDx/a91byKqpvd/YDtUEsAkooTLitPASW5JwLXzCKrhamm\n"
             "lgWn4T/I1NzGMIHwikzWKgumuOdmijcEpTJIHFiXGidvX47bl3nA4+EXyx1AoGAK\n"
             "ostnjm4MUj1YnrdvXIhYp0k3gn7fXvRGPFNKAtOx7RgKwyi7isS/Mui9mEp6D/kj\n"
-            "nbXEMnzFV0Tb3Nb/cS+lGdvG73sdLP2tWjP5vayCMDnWb0xsK5m2pRemAZcZKcZ\n"
-            "SVkloy1ynsqFebUyNQndt/uQ1J9T2HAoka0XdmdTME8/EECgYEA7RW6T44WZFEu\n"
+            "nbXEMnzFV0Tb3Nb/cS+lGdvG73sdLP2tWjP5vayCMDnWb0xsK5m2pRemAZcZKcZS\n"
+            "Vkloy1ynsqFebUyNQndt/uQ1J9T2HAoka0XdmdTME8/EECgYEA7RW6T44WZFEu\n"
             "gI+c0RUen8R0C5Ltpji115dMzcGxp+RqN1it+cV41ryWw+KGgaXCN9wR4XY93i6l\n"
             "IqJk0SNPIncgy0lCYkksB2RtI7naaYfoSf9b/fmME1Jcuygy7bK58FH56fcGOfH\n"
             "8MmhIVGGVbEnPs29h6CvQgUc5fWQ1M2gGIA==\n"
-            "-----END PRIVATE KEY-----\n"
-        ).strip() # Elimina cualquier espacio extra fantasma al principio o final
+            "-----END PRIVATE KEY-----"
+        )
 
         info_servicio = {
             "type": "service_account",
             "project_id": "portal-medico-505421",
             "private_key_id": "eff4836032e5e386152bd1031b01f3c7e203f2d9",
-            "private_key": pkey,
+            "private_key": private_key_limpia,
             "client_email": "streamlit@://gserviceaccount.com",
             "client_id": "107894406539201206914",
             "auth_uri": "https://google.com",
@@ -72,7 +72,6 @@ def inicializar_conexiones():
         st.error(f"Error crítico en la firma de credenciales: {e}")
         return None, None
 
-# Inicialización activa
 drive_service, gc = inicializar_conexiones()
 
 DRIVE_FOLDER_ID = "18vAA3HcfuEldb9vsvyKPYALr2WquCVUD"
