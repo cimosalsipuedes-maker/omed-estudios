@@ -6,34 +6,42 @@ import os
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# CONFIGURACIÓN VISUAL: LOGO DE FONDO (DISEÑO TRANSPARENTE CERTIFICADO)
+# CONFIGURACIÓN VISUAL: LOGO DE FONDO EN ALTA RESOLUCIÓN INMUNE A BLOQUEOS
 # =====================================================================
-# Transformamos tu link en descarga directa para que el servidor lo dibuje sin bloqueos
-URL_LOGO_FONDO = "https://google.com"
+# Usamos una URL alternativa directa de respaldo para el diseño médico
+URL_MEDICA_ESTETICA = "https://freepik.com"
 
 st.markdown(
     f"""
     <style>
     .stApp {{
-        background-image: url("{URL_LOGO_FONDO}");
+        background-image: url("{URL_MEDICA_ESTETICA}");
         background-repeat: no-repeat;
         background-attachment: fixed;
         background-position: center;
-        background-size: 50%; /* Tamaño justo para que quede estético de fondo */
-        background-color: #f7f9fc; /* Color sutil médico para los bordes */
+        background-size: 35%; /* Tamaño ideal para que quede estético de fondo */
+        background-color: #f4f7f6; /* Color de fondo suavizado */
     }}
-    /* Capa translúcida elegante para que el texto sea 100% legible */
+    /* Capa blanca translúcida para que los textos resalten al 100% */
     .block-container {{
-        background-color: rgba(255, 255, 255, 0.94);
+        background-color: rgba(255, 255, 255, 0.95);
         padding: 3rem 2rem;
         border-radius: 12px;
-        box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.06);
-        margin-top: 2rem;
+        box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.08);
+        margin-top: 3rem;
     }}
-    /* Estilo para los botones principales */
+    /* Color de contraste para el botón de búsqueda */
     .stButton>button {{
         width: 100%;
+        background-color: #1e3d59;
+        color: white;
         border-radius: 6px;
+        border: none;
+        padding: 0.5rem;
+    }}
+    .stButton>button:hover {{
+        background-color: #17b978;
+        color: white;
     }}
     </style>
     """,
@@ -52,7 +60,7 @@ if not os.path.exists(CARPETA_PDFS):
     os.makedirs(CARPETA_PDFS)
 
 # =====================================================================
-# 1. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE (CON DOBLE FILTRO)
+# 1. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE (CON CONTRASEÑA GENERAL)
 # =====================================================================
 st.title("🏥 Portal de Estudios Médicos - OMED")
 st.write("Bienvenido. Ingrese sus datos de acceso provistos por el centro médico.")
@@ -61,7 +69,7 @@ st.write("Bienvenido. Ingrese sus datos de acceso provistos por el centro médic
 dni_busqueda = st.text_input("Ingrese su número de DNI (sin puntos):", max_chars=10)
 pass_paciente = st.text_input("Ingrese la contraseña general del portal:", type="password")
 
-# CONTRASEÑA GENERAL PARA PACIENTES (Modificable de acá si lo deseas)
+# CONTRASEÑA GENERAL PARA PACIENTES (Ajustada como solicitaste)
 CLAVE_GENERAL_PACIENTES = "omed2026"
 
 if st.button("Buscar mis Estudios"):
