@@ -1,40 +1,9 @@
 import streamlit as st
 import pandas as pd
 import os
-from git import Repo
 
 # Configuración de la página unificada y profesional con icono nativo en la pestaña
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
-
-# =====================================================================
-# ⚙️ CONFIGURACIÓN SEGURA DESDE STREAMLIT SECRETS
-# =====================================================================
-GITHUB_USER = "cimosalsipuedes-maker"
-GITHUB_REPO = "omed-estudios"
-
-# Extrae el token de forma oculta desde los Secrets de la plataforma
-try:
-    GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
-except Exception:
-    st.error("Falta configurar el GITHUB_TOKEN en los Secrets de Streamlit.")
-    st.stop()
-
-EMAIL_MEDICO = "soporte@omed.com"
-
-def sincronizar_con_github(mensaje_commit, archivo_modificado):
-    """Función técnica que guarda los archivos localmente y los empuja a GitHub para siempre"""
-    try:
-        repo = Repo(".")
-        repo.config_writer().set_value("user", "name", GITHUB_USER).release()
-        repo.config_writer().set_value("user", "email", EMAIL_MEDICO).release()
-        repo.index.add([archivo_modificado])
-        repo.index.commit(mensaje_commit)
-        origen = repo.remote(name="origin")
-        origen.push()
-        return True
-    except Exception as e:
-        st.error(f"Error técnico de sincronización permanente: {e}")
-        return False
 
 # =====================================================================
 # PALETA DE COLORES IDENTITARIA DE TU LOGO "OMED" (DISEÑO LIMPIO)
@@ -92,7 +61,7 @@ if st.button("Buscar mis Estudios"):
     elif pass_paciente != CLAVE_GENERAL_PACIENTES:
         st.error("❌ Contraseña del portal incorrecta.")
     else:
-        with st.spinner("Buscando en el sistema permanente..."):
+        with st.spinner("Buscando en el sistema..."):
             try:
                 df = pd.read_csv(DB_FILE)
                 df["DNI"] = df["DNI"].astype(str).str.strip()
@@ -117,22 +86,53 @@ if st.button("Buscar mis Estudios"):
                             mime="application/pdf"
                         )
                     else:
-                        st.error("El archivo PDF no se encuentra físicamente. Contacte al centro médico.")
+                        st.error("El archivo PDF no está en el servidor. Puede usar el panel de abajo para restaurar la base de datos si el servidor se reinició.")
                 else:
                     st.warning("⚠️ No se encontraron registros para el DNI ingresado.")
             except Exception as e:
                 st.error(f"Error al leer la base de datos: {e}")
 
 # =====================================================================
-# 2. ACCESO EXCLUSIVO PARA MÉDICOS
+# 2. ACCESO EXCLUSIVO PARA MÉDICOS (CON RESPALDO MANUAL INTEGRADO)
 # =====================================================================
 st.markdown("<br><br>", unsafe_allow_html=True)
 with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
     st.write("Área restringida para la carga de nuevos estudios al sistema.")
+    
+    try:
+        clave_medica_correcta = st.secrets["medicos"]["password"]
+    except Exception:
+        clave_medica_correcta = "omed123"
+        
     password_input = st.text_input("Introduzca la clave médica:", type="password", key="med_pass")
     
-    if password_input == "omed123":
+    if password_input == clave_medica_correcta:
         st.success("🔓 Panel de carga desbloqueado.")
+        
+        # --- SECCIÓN DE RESTAURACIÓN POR SI SE REINICIA EL SERVIDOR ---
+        st.markdown("---")
+        st.subheader("🔄 Copia de Seguridad y Restauración")
+        
+        # Botón para descargar la base de datos actual
+        if os.path.exists(DB_FILE):
+            with open(DB_FILE, "rb") as f:
+                csv_bytes = f.read()
+            st.download_button(
+                label="📥 Descargar Respaldo de Base de Datos (.csv)",
+                data=csv_bytes,
+                file_name="base_datos_informes.csv",
+                mime="text/csv"
+            )
+            
+        # Subir archivo para restaurar la base de datos si el servidor efímero se reseteó
+        archivo_restauracion = st.file_uploader("Si la app se reinició, suba el último archivo .csv descargado para restaurar los datos:", type=["csv"])
+        if archivo_restauracion is not None:
+            df_restaurado = pd.read_csv(archivo_restauracion)
+            df_restaurado.to_csv(DB_FILE, index=False)
+            st.success("✅ Base de datos restaurada con éxito.")
+            
+        st.markdown("---")
+        st.subheader("➕ Carga de Nuevo Estudio")
         
         dni_paciente = st.text_input("DNI del Paciente (Sin puntos ni espacios):")
         nombre_paciente = st.text_input("Nombre Completo del Paciente:")
@@ -140,7 +140,7 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
         
         if st.button("Subir e Informar"):
             if dni_paciente and nombre_paciente and archivo_pdf:
-                with st.spinner("Guardando PDF de forma permanente..."):
+                with st.spinner("Guardando PDF..."):
                     try:
                         nombre_seguro = f"{dni_paciente.strip()}_{archivo_pdf.name.replace(' ', '_')}"
                         ruta_destino_final = os.path.join(CARPETA_PDFS, nombre_seguro)
@@ -148,23 +148,15 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
                         with open(ruta_destino_final, "wb") as f:
                             f.write(archivo_pdf.getbuffer())
                         
-                        subida_pdf_ok = sincronizar_con_github(f"Carga PDF Paciente DNI {dni_paciente}", ruta_destino_final)
+                        df_actual = pd.read_csv(DB_FILE)
+                        nueva_fila = pd.DataFrame([{"DNI": str(dni_paciente).strip(), "Nombre": nombre_paciente.strip(), "Enlace_PDF": ruta_destino_final}])
+                        df_actual = pd.concat([df_actual, nueva_fila], ignore_index=True)
+                        df_actual.to_csv(DB_FILE, index=False)
                         
-                        if subida_pdf_ok:
-                            df_actual = pd.read_csv(DB_FILE)
-                            nueva_fila = pd.DataFrame([{"DNI": str(dni_paciente).strip(), "Nombre": nombre_paciente.strip(), "Enlace_PDF": ruta_destino_final}])
-                            df_actual = pd.concat([df_actual, nueva_fila], ignore_index=True)
-                            df_actual.to_csv(DB_FILE, index=False)
-                            
-                            subida_csv_ok = sincronizar_con_github(f"Actualizacion DB - Paciente {dni_paciente}", DB_FILE)
-                            
-                            if subida_csv_ok:
-                                st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} quedó respaldado.")
-                            else:
-                                st.warning("El archivo se subió pero hubo un error al actualizar el índice.")
-                        else:
-                            st.error("No se pudo subir el informe a la nube permanente.")
+                        st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} fue cargado correctamente.")
+                        st.balloons()
+                        
                     except Exception as e:
-                        st.error(f"Error general en el proceso: {e}")
+                        st.error(f"Error general en el proceso de almacenamiento: {e}")
             else:
                 st.warning("⚠️ Por favor, complete todos los campos antes de subir.")
