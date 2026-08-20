@@ -9,11 +9,10 @@ st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="c
 # =====================================================================
 # ⚙️ CONFIGURACIÓN DE TU REPOSITORIO DE GITHUB (PARA GUARDADO PERMANENTE)
 # =====================================================================
-# Remplazá estos 4 datos con los tuyos exactos:
 GITHUB_USER = "cimosalsipuedes-maker"
 GITHUB_REPO = "omed-estudios"
 GITHUB_TOKEN = "PEGA_AQUI_EL_TOKEN_LARGO_QUE_GENERASTE"
-EMAIL_MEDICO = "tu_email@omed.com" # Puede ser cualquiera, es para el historial de cambios
+EMAIL_MEDICO = "tu_email@omed.com"
 
 # URL interna de clonación con permisos de escritura segura
 REPO_URL = f"https://{GITHUB_TOKEN}@://github.com{GITHUB_USER}/{GITHUB_REPO}.git"
@@ -21,20 +20,11 @@ REPO_URL = f"https://{GITHUB_TOKEN}@://github.com{GITHUB_USER}/{GITHUB_REPO}.git
 def sincronizar_con_github(mensaje_commit, archivo_modificado):
     """Función técnica que guarda los archivos localmente y los empuja a GitHub para siempre"""
     try:
-        # Inicializa el gestor de Git en la carpeta actual de la app
         repo = Repo(".")
-        
-        # Configura la identidad del autor del cambio
         repo.config_writer().set_value("user", "name", GITHUB_USER).release()
         repo.config_writer().set_value("user", "email", EMAIL_MEDICO).release()
-        
-        # Añade el archivo nuevo o modificado al área de preparación
         repo.index.add([archivo_modificado])
-        
-        # Confirma el cambio con un mensaje descriptivo
         repo.index.commit(mensaje_commit)
-        
-        # Empuja los cambios al servidor principal de GitHub de forma definitiva
         origen = repo.remote(name="origin")
         origen.push()
         return True
@@ -58,7 +48,7 @@ st.markdown(
     .logo-text-secundario { color: #001a57 !important; font-size: 15px !important; font-weight: 700 !important; margin-top: 5px !important; text-transform: uppercase; letter-spacing: 3px; }
     .seccion-titulo { color: #001a57 !important; text-align: center; font-size: 24px !important; font-weight: 700 !important; margin-top: 15px !important; }
     .stButton>button { width: 100%; background-color: #001a57 !important; color: white !important; border-radius: 8px !important; border: none !important; padding: 0.7rem !important; font-weight: 600 !important; font-size: 16px !important; transition: all 0.3s ease; box-shadow: 0px 4px 12px rgba(0, 26, 87, 0.15); }
-    .stButton>button:hover { background-color: #1dd4b6 !important; color: #001a57 !important; box-shadow: 0px 4px 16px rgba(29, 212, 182, 0.4); }
+    .stButton>button:hover { background-color: #1dd4b6 !important; color: #001a57 !important; box-shadow: 0px 4px 166px rgba(29, 212, 182, 0.4); }
     label, p, .stMarkdown { color: #001a57 !important; font-weight: 600 !important; }
     .stMarkdown p, .bajada-texto { color: #555555 !important; font-weight: 400 !important; }
     </style>
@@ -71,7 +61,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Nombre del archivo base de datos local
 DB_FILE = "base_datos_informes.csv"
 CARPETA_PDFS = "estudios_medicos_respaldo"
 
@@ -124,14 +113,14 @@ if st.button("Buscar mis Estudios"):
                             mime="application/pdf"
                         )
                     else:
-                        st.error("El archivo PDF del estudio no se encuentra en el servidor. Contacte al centro médico.")
+                        st.error("El archivo PDF no se encuentra físicamente. Contacte al centro médico.")
                 else:
                     st.warning("⚠️ No se encontraron registros para el DNI ingresado.")
             except Exception as e:
                 st.error(f"Error al leer la base de datos: {e}")
 
 # =====================================================================
-# 2. ACCESO EXCLUSIVO PARA MÉDICOS (Guardado automático en GitHub)
+# 2. ACCESO EXCLUSIVO PARA MÉDICOS
 # =====================================================================
 st.markdown("<br><br>", unsafe_allow_html=True)
 with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
@@ -147,36 +136,31 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
         
         if st.button("Subir e Informar"):
             if dni_paciente and nombre_paciente and archivo_pdf:
-                with st.spinner("Guardando PDF de forma permanente en la nube..."):
+                with st.spinner("Guardando PDF de forma permanente..."):
                     try:
-                        # 1. Crear rutas y directorios locales dentro del servidor
                         nombre_seguro = f"{dni_paciente.strip()}_{archivo_pdf.name.replace(' ', '_')}"
                         ruta_destino_final = os.path.join(CARPETA_PDFS, nombre_seguro)
                         
-                        # 2. Guardar el PDF físicamente
                         with open(ruta_destino_final, "wb") as f:
                             f.write(archivo_pdf.getbuffer())
                         
-                        # Subir el archivo PDF inmediatamente a GitHub para resguardarlo
                         subida_pdf_ok = sincronizar_con_github(f"Carga PDF Paciente DNI {dni_paciente}", ruta_destino_final)
                         
                         if subida_pdf_ok:
-                            # 3. Registrar los datos en la tabla CSV local
                             df_actual = pd.read_csv(DB_FILE)
                             nueva_fila = pd.DataFrame([{"DNI": str(dni_paciente).strip(), "Nombre": nombre_paciente.strip(), "Enlace_PDF": ruta_destino_final}])
                             df_actual = pd.concat([df_actual, nueva_fila], ignore_index=True)
                             df_actual.to_csv(DB_FILE, index=False)
                             
-                            # Subir la base de datos CSV actualizada a GitHub
                             subida_csv_ok = sincronizar_con_github(f"Actualizacion DB - Paciente {dni_paciente}", DB_FILE)
                             
                             if subida_csv_ok:
-                                st.success(f"🎉 ¡Éxito total! El estudio de {nombre_paciente} quedó respaldado para siempre.")
+                                st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} quedó respaldado.")
                             else:
-                                st.warning("El PDF se guardó pero hubo un problema al actualizar el índice de pacientes.")
+                                st.warning("El archivo se subió pero hubo un error al actualizar el índice.")
                         else:
-                            st.error("No se pudo subir el archivo al almacenamiento persistente. Reintente.")
-                            
+                            st.error("No se pudo subir el informe a la nube permanente.")
                     except Exception as e:
-                        st.error(f"Error general en el proceso de almacenamiento: {e}")
+                        st.error(f"Error general en el proceso: {e}")
             else:
+                st.warning("⚠️ Por favor, complete todos los campos antes de subir.")
