@@ -1,9 +1,30 @@
 import streamlit as st
 import pandas as pd
-import os
+import base64
 
-# Configuración de la página unificada y profesional con icono nativo en la pestaña
+# Configuración de la página unificada institucional
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
+
+# =====================================================================
+# 🗄️ CONEXIÓN Y CREACIÓN DE LA BASE DE DATOS BLINDADA
+# =====================================================================
+try:
+    conn = st.connection("sql")
+except Exception:
+    st.error("Error de configuración interna. Revise el apartado Secrets de Streamlit.")
+    st.stop()
+
+# Inicialización técnica de la tabla permanente (Guarda el índice y el PDF en texto)
+with conn.session as session:
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS informes_omed (
+            dni TEXT PRIMARY KEY,
+            nombre TEXT,
+            nombre_archivo TEXT,
+            pdf_base64 TEXT
+        );
+    """)
+    session.commit()
 
 # =====================================================================
 # PALETA DE COLORES IDENTITARIA DE TU LOGO "OMED" (DISEÑO LIMPIO)
@@ -34,16 +55,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-DB_FILE = "base_datos_informes.csv"
-CARPETA_PDFS = "estudios_medicos_respaldo"
-
-if not os.path.exists(DB_FILE):
-    df_init = pd.DataFrame(columns=["DNI", "Nombre", "Enlace_PDF"])
-    df_init.to_csv(DB_FILE, index=False)
-
-if not os.path.exists(CARPETA_PDFS):
-    os.makedirs(CARPETA_PDFS)
-
 # =====================================================================
 # 1. INTERFAZ PÚBLICA: PORTAL DEL PACIENTE
 # =====================================================================
@@ -61,39 +72,37 @@ if st.button("Buscar mis Estudios"):
     elif pass_paciente != CLAVE_GENERAL_PACIENTES:
         st.error("❌ Contraseña del portal incorrecta.")
     else:
-        with st.spinner("Buscando en el sistema..."):
+        with st.spinner("Consultando en el servidor seguro OMED..."):
             try:
-                df = pd.read_csv(DB_FILE)
-                df["DNI"] = df["DNI"].astype(str).str.strip()
                 dni_limpio = str(dni_busqueda).strip()
                 
-                registro = df[df["DNI"] == dni_limpio]
+                # Búsqueda directa e indexada en la base de datos protegida
+                df_resultado = conn.query(f"SELECT * FROM informes_omed WHERE dni = '{dni_limpio}';")
                 
-                if not registro.empty:
-                    nombre_paciente = str(registro["Nombre"].values[0])
-                    ruta_archivo_pdf = str(registro["Enlace_PDF"].values[0])
+                if not df_resultado.empty:
+                    # Extraer información de la primera fila coincidente
+                    nombre_paciente = str(df_resultado.iloc[0]["nombre"])
+                    nombre_archivo = str(df_resultado.iloc[0]["nombre_archivo"])
+                    pdf_base64 = str(df_resultado.iloc[0]["pdf_base64"])
                     
                     st.success(f"✅ Estudio encontrado para: {nombre_paciente}")
                     
-                    if os.path.exists(ruta_archivo_pdf):
-                        with open(ruta_archivo_pdf, "rb") as f:
-                            bytes_pdf = f.read()
-                        
-                        st.download_button(
-                            label="⬇️ Descargar mi Informe Médico (PDF)",
-                            data=bytes_pdf,
-                            file_name=os.path.basename(ruta_archivo_pdf),
-                            mime="application/pdf"
-                        )
-                    else:
-                        st.error("El archivo PDF no está en el servidor. Puede usar el panel de abajo para restaurar la base de datos si el servidor se reinició.")
+                    # Decodificar el PDF guardado en formato de texto de vuelta a binario
+                    bytes_pdf = base64.b64decode(pdf_base64)
+                    
+                    st.download_button(
+                        label="⬇️ Descargar mi Informe Médico (PDF)",
+                        data=bytes_pdf,
+                        file_name=nombre_archivo,
+                        mime="application/pdf"
+                    )
                 else:
                     st.warning("⚠️ No se encontraron registros para el DNI ingresado.")
             except Exception as e:
-                st.error(f"Error al leer la base de datos: {e}")
+                st.error(f"Error técnico de lectura en la base de datos: {e}")
 
 # =====================================================================
-# 2. ACCESO EXCLUSIVO PARA MÉDICOS (CON RESPALDO MANUAL INTEGRADO)
+# 2. ACCESO EXCLUSIVO PARA MÉDICOS
 # =====================================================================
 st.markdown("<br><br>", unsafe_allow_html=True)
 with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
@@ -109,54 +118,39 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
     if password_input == clave_medica_correcta:
         st.success("🔓 Panel de carga desbloqueado.")
         
-        # --- SECCIÓN DE RESTAURACIÓN POR SI SE REINICIA EL SERVIDOR ---
-        st.markdown("---")
-        st.subheader("🔄 Copia de Seguridad y Restauración")
-        
-        # Botón para descargar la base de datos actual
-        if os.path.exists(DB_FILE):
-            with open(DB_FILE, "rb") as f:
-                csv_bytes = f.read()
-            st.download_button(
-                label="📥 Descargar Respaldo de Base de Datos (.csv)",
-                data=csv_bytes,
-                file_name="base_datos_informes.csv",
-                mime="text/csv"
-            )
-            
-        # Subir archivo para restaurar la base de datos si el servidor efímero se reseteó
-        archivo_restauracion = st.file_uploader("Si la app se reinició, suba el último archivo .csv descargado para restaurar los datos:", type=["csv"])
-        if archivo_restauracion is not None:
-            df_restaurado = pd.read_csv(archivo_restauracion)
-            df_restaurado.to_csv(DB_FILE, index=False)
-            st.success("✅ Base de datos restaurada con éxito.")
-            
-        st.markdown("---")
-        st.subheader("➕ Carga de Nuevo Estudio")
-        
         dni_paciente = st.text_input("DNI del Paciente (Sin puntos ni espacios):")
         nombre_paciente = st.text_input("Nombre Completo del Paciente:")
         archivo_pdf = st.file_uploader("Seleccione el archivo PDF del estudio:", type=["pdf"])
         
         if st.button("Subir e Informar"):
             if dni_paciente and nombre_paciente and archivo_pdf:
-                with st.spinner("Guardando PDF..."):
+                with st.spinner("Encriptando y blindando PDF en la nube permanente..."):
                     try:
-                        nombre_seguro = f"{dni_paciente.strip()}_{archivo_pdf.name.replace(' ', '_')}"
-                        ruta_destino_final = os.path.join(CARPETA_PDFS, nombre_seguro)
+                        dni_limpio = str(dni_paciente).strip()
                         
-                        with open(ruta_destino_final, "wb") as f:
-                            f.write(archivo_pdf.getbuffer())
+                        # Convertir el archivo PDF a texto seguro Base64
+                        bytes_pdf = archivo_pdf.read()
+                        pdf_convertido = base64.b64encode(bytes_pdf).decode("utf-8")
                         
-                        df_actual = pd.read_csv(DB_FILE)
-                        nueva_fila = pd.DataFrame([{"DNI": str(dni_paciente).strip(), "Nombre": nombre_paciente.strip(), "Enlace_PDF": ruta_destino_final}])
-                        df_actual = pd.concat([df_actual, nueva_fila], ignore_index=True)
-                        df_actual.to_csv(DB_FILE, index=False)
+                        # Insertar directamente en la base de datos segura SQL
+                        with conn.session as session:
+                            session.execute(
+                                """
+                                INSERT OR REPLACE INTO informes_omed (dni, nombre, nombre_archivo, pdf_base64)
+                                VALUES (:dni, :nombre, :nombre_archivo, :pdf_base64);
+                                """,
+                                {
+                                    "dni": dni_limpio,
+                                    "nombre": nombre_paciente.strip(),
+                                    "nombre_archivo": archivo_pdf.name,
+                                    "pdf_base64": pdf_convertido
+                                }
+                            )
+                            session.commit()
                         
-                        st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} fue cargado correctamente.")
+                        st.success(f"🎉 ¡Éxito! El estudio de {nombre_paciente} quedó grabado permanentemente.")
                         st.balloons()
-                        
                     except Exception as e:
-                        st.error(f"Error general en el proceso de almacenamiento: {e}")
+                        st.error(f"Error técnico al escribir en el almacenamiento permanente: {e}")
             else:
                 st.warning("⚠️ Por favor, complete todos los campos antes de subir.")
