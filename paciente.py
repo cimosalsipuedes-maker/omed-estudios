@@ -7,15 +7,19 @@ from git import Repo
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
 
 # =====================================================================
-# ⚙️ CONFIGURACIÓN DE TU REPOSITORIO DE GITHUB (PARA GUARDADO PERMANENTE)
+# ⚙️ CONFIGURACIÓN SEGURA DESDE STREAMLIT SECRETS
 # =====================================================================
 GITHUB_USER = "cimosalsipuedes-maker"
 GITHUB_REPO = "omed-estudios"
-GITHUB_TOKEN = "PEGA_AQUI_EL_TOKEN_LARGO_QUE_GENERASTE"
-EMAIL_MEDICO = "tu_email@omed.com"
 
-# URL interna de clonación con permisos de escritura segura
-REPO_URL = f"https://{GITHUB_TOKEN}@://github.com{GITHUB_USER}/{GITHUB_REPO}.git"
+# Extrae el token de forma oculta desde los Secrets de la plataforma
+try:
+    GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+except Exception:
+    st.error("Falta configurar el GITHUB_TOKEN en los Secrets de Streamlit.")
+    st.stop()
+
+EMAIL_MEDICO = "soporte@omed.com"
 
 def sincronizar_con_github(mensaje_commit, archivo_modificado):
     """Función técnica que guarda los archivos localmente y los empuja a GitHub para siempre"""
