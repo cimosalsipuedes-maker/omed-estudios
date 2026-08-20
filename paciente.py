@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import base64
+from sqlalchemy import text  # <-- Importamos la función técnica que faltaba
 
 # Configuración de la página unificada institucional
 st.set_page_config(page_title="Portal Médico OMED", page_icon="🏥", layout="centered")
@@ -14,16 +15,16 @@ except Exception:
     st.error("Error de configuración interna. Revise el apartado Secrets de Streamlit.")
     st.stop()
 
-# Inicialización técnica de la tabla permanente (Guarda el índice y el PDF en texto)
+# Inicialización técnica de la tabla permanente (Usando text() para evitar el error de SQLAlchemy)
 with conn.session as session:
-    session.execute("""
+    session.execute(text("""
         CREATE TABLE IF NOT EXISTS informes_omed (
             dni TEXT PRIMARY KEY,
             nombre TEXT,
             nombre_archivo TEXT,
             pdf_base64 TEXT
         );
-    """)
+    """))
     session.commit()
 
 # =====================================================================
@@ -76,14 +77,14 @@ if st.button("Buscar mis Estudios"):
             try:
                 dni_limpio = str(dni_busqueda).strip()
                 
-                # Búsqueda directa e indexada en la base de datos protegida
+                # Búsqueda segura usando la función query nativa de Streamlit
                 df_resultado = conn.query(f"SELECT * FROM informes_omed WHERE dni = '{dni_limpio}';")
                 
                 if not df_resultado.empty:
-                    # Extraer información de la primera fila coincidente
-                    nombre_paciente = str(df_resultado.iloc[0]["nombre"])
-                    nombre_archivo = str(df_resultado.iloc[0]["nombre_archivo"])
-                    pdf_base64 = str(df_resultado.iloc[0]["pdf_base64"])
+                    # Extraer información nativa de Pandas evitando errores de series vacías
+                    nombre_paciente = str(df_resultado["nombre"].values[0])
+                    nombre_archivo = str(df_resultado["nombre_archivo"].values[0])
+                    pdf_base64 = str(df_resultado["pdf_base64"].values[0])
                     
                     st.success(f"✅ Estudio encontrado para: {nombre_paciente}")
                     
@@ -132,13 +133,13 @@ with st.expander("🛠️ Acceso Exclusivo para Personal Médico"):
                         bytes_pdf = archivo_pdf.read()
                         pdf_convertido = base64.b64encode(bytes_pdf).decode("utf-8")
                         
-                        # Insertar directamente en la base de datos segura SQL
+                        # Insertar directamente usando text() y bindings estructurados
                         with conn.session as session:
                             session.execute(
-                                """
+                                text("""
                                 INSERT OR REPLACE INTO informes_omed (dni, nombre, nombre_archivo, pdf_base64)
                                 VALUES (:dni, :nombre, :nombre_archivo, :pdf_base64);
-                                """,
+                                """),
                                 {
                                     "dni": dni_limpio,
                                     "nombre": nombre_paciente.strip(),
